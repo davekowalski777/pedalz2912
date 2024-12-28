@@ -5,6 +5,7 @@ from flask_minify import Minify
 from flask_caching import Cache
 from datetime import datetime, timedelta
 from sqlalchemy import or_, and_, func
+from sqlalchemy.orm import joinedload
 import pandas as pd
 import os
 import csv
@@ -20,15 +21,81 @@ import re
 
 # Initialize Flask app
 app = Flask(__name__, 
-           template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
+           template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'),
+           static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'),
+           static_url_path='/static')
 app.config['SECRET_KEY'] = 'your-secret-key'  # Change this to a secure secret key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'pedals.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Cache configuration
-app.config['CACHE_TYPE'] = 'simple'
-app.config['CACHE_DEFAULT_TIMEOUT'] = 300  # 5 minutes default
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.config['CACHE_DEFAULT_TIMEOUT'] = 3600  # 1 hour
 cache = Cache(app)
+
+# Minification configuration - only minify in production
+if not app.debug:
+    Minify(app=app, 
+           html=True, 
+           js=True, 
+           cssless=True, 
+           fail_safe=True)
+
+# Static file serving with caching
+@app.after_request
+def add_header(response):
+    if 'Cache-Control' not in response.headers:
+        if request.path.startswith('/static/vendor/'):
+            # Cache vendor files for 1 year
+            response.headers['Cache-Control'] = 'public, max-age=31536000'
+        elif request.path.startswith('/static/images/'):
+            # Cache images for 1 week but allow revalidation
+            response.headers['Cache-Control'] = 'public, max-age=604800, must-revalidate'
+            # Add image optimization headers
+            response.headers['Accept-CH'] = 'DPR, Width, Viewport-Width'
+            response.headers['Accept-CH-Lifetime'] = '86400'
+        else:
+            # Cache other static files for 1 hour
+            response.headers['Cache-Control'] = 'public, max-age=3600'
+    
+    # Add security headers that also improve performance
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'no-referrer-when-downgrade'
+    
+    return response
+
+# Enable Brotli compression for static files
+def init_compression(app):
+    try:
+        import brotli
+        from flask import make_response
+        from functools import wraps
+
+        def compress_response(f):
+            @wraps(f)
+            def decorated_function(*args, **kwargs):
+                response = make_response(f(*args, **kwargs))
+                accept_encoding = request.headers.get('Accept-Encoding', '')
+
+                if 'br' in accept_encoding.lower() and not response.direct_passthrough:
+                    if (response.content_type and (
+                        response.content_type.startswith('text/') or
+                        response.content_type in ['application/javascript', 'application/json', 'application/xml']
+                    )):
+                        compressed_data = brotli.compress(response.get_data())
+                        response.set_data(compressed_data)
+                        response.headers['Content-Encoding'] = 'br'
+                        response.headers['Content-Length'] = len(compressed_data)
+                return response
+            return decorated_function
+
+        # Apply compression to static files
+        app.view_functions['static'] = compress_response(app.view_functions['static'])
+        
+    except ImportError:
+        print("Brotli compression not available")
+
+init_compression(app)
 
 # Initialize extensions
 db.init_app(app)
@@ -36,19 +103,13 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'admin_login'
 
-# Initialize Flask-Minify
-Minify(app=app, html=True, js=True, cssless=True)
-
-# Ensure instance folder exists
-os.makedirs('instance', exist_ok=True)
-
 # Custom Jinja filters
 def slugify(text):
     """Convert text to URL-friendly slug."""
     if not text:
         return ""
-    # Remove forward slashes and backslashes completely
-    text = text.replace('/', '').replace('\\', '')
+    # Remove slashes and surrounding spaces
+    text = re.sub(r'\s*/\s*', '', text)
     # Remove apostrophes and quotes
     text = text.replace("'", "").replace('"', '')
     # Convert to lowercase and strip whitespace
@@ -66,18 +127,39 @@ def get_youtube_embed_url(url):
     """Convert YouTube URL to embed URL."""
     if not url:
         return None
-    if 'youtube.com' in url or 'youtu.be' in url:
-        if 'youtube.com/watch?v=' in url:
-            video_id = url.split('watch?v=')[1].split('&')[0]
-            return f'https://www.youtube.com/embed/{video_id}'
-        elif 'youtu.be/' in url:
-            video_id = url.split('youtu.be/')[1]
-            return f'https://www.youtube.com/embed/{video_id}'
-    return url
+    
+    video_id = None
+    
+    # Try to extract video ID from different YouTube URL formats
+    patterns = [
+        r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            video_id = match.group(1)
+            break
+    
+    if video_id:
+        return {
+            'embed_url': f'https://www.youtube.com/embed/{video_id}',
+            'thumbnail': f'https://img.youtube.com/vi/{video_id}/maxresdefault.jpg',
+            'id': video_id
+        }
+    return None
+
+def get_youtube_thumbnail_url(url):
+    """Convert YouTube URL to thumbnail URL."""
+    youtube_data = get_youtube_embed_url(url)
+    if youtube_data:
+        return youtube_data['thumbnail']
+    return None
 
 # Add Jinja2 filters
 app.jinja_env.filters['slugify'] = slugify
 app.jinja_env.filters['get_youtube_embed_url'] = get_youtube_embed_url
+app.jinja_env.filters['get_youtube_thumbnail_url'] = get_youtube_thumbnail_url
 
 @app.template_filter('markdown_to_html')
 def markdown_to_html(text):
@@ -197,97 +279,63 @@ def index():
         print(f"Error in index route: {str(e)}")
         raise
 
-@app.route('/pedal/<slug>')
-@cache.cached(timeout=300, query_string=True)  # Cache for 5 minutes, consider query parameters
-def pedal_detail(slug):
-    print(f"Debug - Looking for slug: {slug}")  # Debug print
-    
-    # If the URL doesn't end with -review, redirect to the review version
-    if not slug.endswith('-review'):
-        return redirect(url_for('pedal_detail', slug=slug + '-review'))
-
-    # Remove the -review suffix for lookup
-    lookup_slug = slug.replace('-review', '')
-    print(f"Debug - Normalized slug: {lookup_slug}")  # Debug print
-    
-    # Try to find the pedal by reconstructing the slug
-    pedal = None
-    pedals = Pedal.query.all()
-    print(f"Debug - Total pedals found: {len(pedals)}")  # Debug print
-    
-    # First try: direct match after normalization
-    normalized_lookup = lookup_slug.lower().replace('-', ' ')
-    print(f"Debug - Normalized lookup: {normalized_lookup}")  # Debug print
-    
-    for p in pedals:
-        # Create a normalized version of the pedal name
-        # Handle special case for "Hard Drive - Distortion"
-        normalized_model = p.pedal_model.replace('/', '')
-        if ' - ' in normalized_model:
-            # Keep the dash with spaces for "Hard Drive - Distortion"
-            normalized_model = normalized_model.replace(' - ', '-')
-        pedal_name = f"{p.brand} {normalized_model}".lower()
-        print(f"Debug - Comparing with: {pedal_name}")  # Debug print
-        
-        # Try both with and without the dash
-        if normalized_lookup == pedal_name.replace('-', ' ') or normalized_lookup == pedal_name:
-            pedal = p
-            break
-    
-    # Second try: split by spaces and try different combinations
-    if not pedal:
-        parts = normalized_lookup.split()
-        # Special handling for "jhs pedals" prefix
-        if len(parts) >= 2 and parts[0] == 'jhs' and parts[1] == 'pedals':
-            brand = 'JHS Pedals'
-            model_parts = parts[2:]
-            model = ' '.join(model_parts)
-            print(f"Debug - Looking for JHS model: {model}")  # Debug print
-            
-            # Try different variations of the model name
-            pedal = Pedal.query.filter(
-                Pedal.brand.ilike('JHS Pedals'),
-                db.or_(
-                    db.func.lower(Pedal.pedal_model) == model.lower(),
-                    db.func.lower(Pedal.pedal_model) == model.lower().replace(' ', '-'),
-                    db.func.lower(Pedal.pedal_model) == model.lower().replace('-', ' ')
-                )
-            ).first()
-            
-            if pedal:
-                print(f"Debug - Found pedal: {pedal.brand} {pedal.pedal_model}")  # Debug print
-
-    if pedal is None:
-        print("Debug - No pedal found")  # Debug print
-        abort(404)
-
-    # Get ratings and reviews
-    ratings = Rating.query.filter_by(pedal_id=pedal.id, approved=True).all()
-    avg_rating = 0
-    if ratings:
-        avg_rating = sum([r.rating for r in ratings]) / len(ratings)
-
-    # Get similar pedals
+def get_similar_pedals(pedal, limit=4):
+    # First try to find pedals of the same type
     similar_pedals = Pedal.query.filter(
-        db.or_(
-            Pedal.brand == pedal.brand,
-            # Look for pedals with similar type in the name
-            db.or_(
-                *[Pedal.pedal_model.ilike(f'%{word}%') 
-                  for word in pedal.pedal_model.split()
-                  if len(word) > 3]  # Only use words longer than 3 letters
-            )
-        ),
-        Pedal.id != pedal.id  # Exclude the current pedal
-    ).limit(4).all()
+        Pedal.id != pedal.id,
+        Pedal.pedal_type == pedal.pedal_type
+    ).order_by(func.random()).limit(limit).all()
 
-    response = make_response(render_template('pedal_detail.html', 
-                                          pedal=pedal, 
-                                          ratings=ratings,
-                                          avg_rating=avg_rating,
-                                          similar_pedals=similar_pedals))
-    response.headers['Cache-Control'] = 'public, max-age=300'  # Cache for 5 minutes
-    return response
+    # If we don't have enough pedals of the same type, add pedals from the same brand
+    if len(similar_pedals) < limit:
+        remaining_slots = limit - len(similar_pedals)
+        same_brand_pedals = Pedal.query.filter(
+            Pedal.id != pedal.id,
+            Pedal.brand == pedal.brand,
+            Pedal.id.notin_([p.id for p in similar_pedals])
+        ).order_by(func.random()).limit(remaining_slots).all()
+        similar_pedals.extend(same_brand_pedals)
+
+    # If we still don't have enough, add random pedals
+    if len(similar_pedals) < limit:
+        remaining_slots = limit - len(similar_pedals)
+        random_pedals = Pedal.query.filter(
+            Pedal.id != pedal.id,
+            Pedal.id.notin_([p.id for p in similar_pedals])
+        ).order_by(func.random()).limit(remaining_slots).all()
+        similar_pedals.extend(random_pedals)
+
+    return similar_pedals
+
+@cache.cached(timeout=3600)
+@app.route('/pedal/<slug>')
+def pedal_detail(slug):
+    # Remove any trailing '-review' from the slug for matching
+    base_slug = slug.replace('-review', '')
+    
+    # Get all pedals and find the matching one
+    pedals = Pedal.query.options(
+        joinedload(Pedal.ratings)
+    ).all()
+    
+    # Find pedal by comparing slugified names
+    for pedal in pedals:
+        pedal_slug = slugify(f"{pedal.brand} {pedal.pedal_model}")
+        if pedal_slug == base_slug:
+            # Get approved ratings
+            ratings = [r for r in pedal.ratings if r.approved]
+            avg_rating = sum([r.rating for r in ratings]) / len(ratings) if ratings else 0
+            
+            # Get similar pedals
+            similar_pedals = get_similar_pedals(pedal)
+            
+            return render_template('pedal_detail.html', 
+                                pedal=pedal,
+                                ratings=ratings,
+                                avg_rating=avg_rating,
+                                similar_pedals=similar_pedals)
+    
+    abort(404)
 
 @app.route('/about')
 @cache.cached(timeout=3600)  # Cache for 1 hour
@@ -783,21 +831,21 @@ def admin_blog_delete(id):
         flash('Error deleting blog post. Please try again.', 'error')
     return redirect(url_for('admin_blog'))
 
-@app.route('/compare_pedals', methods=['GET', 'POST'])
-def compare_pedals():
+@app.route('/compare', methods=['GET', 'POST'])
+def compare():
     if request.method == 'POST':
         pedal1_name = request.form.get('pedal1', '').strip()
         pedal2_name = request.form.get('pedal2', '').strip()
         
         if not pedal1_name or not pedal2_name:
             flash('Please select two pedals to compare.', 'warning')
-            return redirect(url_for('compare_pedals'))
+            return redirect(url_for('compare'))
         
         # Create slugs from pedal names using the same slugify function
         pedal1_slug = slugify(pedal1_name)
         pedal2_slug = slugify(pedal2_name)
         
-        return redirect(url_for('compare_pedals_by_slug', pedal1=pedal1_slug, pedal2=pedal2_slug))
+        return redirect(url_for('compare_by_slug', pedal1=pedal1_slug, pedal2=pedal2_slug))
     
     # Get all pedals for search suggestions
     pedals = Pedal.query.with_entities(Pedal.brand, Pedal.pedal_model).all()
@@ -813,21 +861,12 @@ def compare_pedals():
 
 @app.route('/compare/<pedal1>-vs-<pedal2>')
 @cache.cached(timeout=300)  # Cache for 5 minutes
-def compare_pedals_by_slug(pedal1, pedal2):
+def compare_by_slug(pedal1, pedal2):
     # Check if trying to compare the same pedal
     if pedal1 == pedal2:
         flash('You cannot compare a pedal with itself. Please select two different pedals.', 'warning')
-        return redirect(url_for('compare_pedals'))
+        return redirect(url_for('compare'))
 
-    pedal1_obj = None
-    pedal2_obj = None
-    pedal1_ratings = []
-    pedal2_ratings = []
-    pedal1_avg_rating = 0
-    pedal2_avg_rating = 0
-    pedal1_reviews = []
-    pedal2_reviews = []
-    
     def find_pedal(slug):
         # Remove -review suffix if present
         lookup_slug = slug.replace('-review', '')
@@ -852,19 +891,7 @@ def compare_pedals_by_slug(pedal1, pedal2):
 
     if not pedal1_obj or not pedal2_obj:
         flash('One or both pedals not found. Please try again.', 'error')
-        return redirect(url_for('compare_pedals'))
-
-    # Get ratings and reviews for pedal 1
-    if pedal1_obj:
-        pedal1_ratings = Rating.query.filter_by(pedal_id=pedal1_obj.id).all()
-        pedal1_avg_rating = sum([r.rating for r in pedal1_ratings]) / len(pedal1_ratings) if pedal1_ratings else 0
-        pedal1_reviews = Rating.query.filter_by(pedal_id=pedal1_obj.id, approved=True).all()
-
-    # Get ratings and reviews for pedal 2
-    if pedal2_obj:
-        pedal2_ratings = Rating.query.filter_by(pedal_id=pedal2_obj.id).all()
-        pedal2_avg_rating = sum([r.rating for r in pedal2_ratings]) / len(pedal2_ratings) if pedal2_ratings else 0
-        pedal2_reviews = Rating.query.filter_by(pedal_id=pedal2_obj.id, approved=True).all()
+        return redirect(url_for('compare'))
 
     # Get similar pedals
     similar_pedals = []
@@ -882,55 +909,36 @@ def compare_pedals_by_slug(pedal1, pedal2):
     response = make_response(render_template('compare.html',
                          pedal1=pedal1_obj,
                          pedal2=pedal2_obj,
-                         pedal1_ratings=pedal1_ratings,
-                         pedal2_ratings=pedal2_ratings,
-                         pedal1_avg_rating=pedal1_avg_rating,
-                         pedal2_avg_rating=pedal2_avg_rating,
-                         pedal1_reviews=pedal1_reviews,
-                         pedal2_reviews=pedal2_reviews,
                          similar_pedals=similar_pedals,
                          pedal_suggestions=pedal_suggestions))
     response.headers['Cache-Control'] = 'public, max-age=3600, stale-while-revalidate=60'
     return response
 
-def get_popular_comparisons():
-    """Get list of popular pedal comparisons based on certain criteria"""
-    popular_pairs = []
-    pedals = Pedal.query.all()
-    pedal_dict = {pedal.id: pedal for pedal in pedals}
+def get_youtube_embed_url(url):
+    """Convert YouTube URL to embed URL."""
+    if not url:
+        return None
     
-    # Get comparisons that have been viewed the most (if you track views)
-    # For now, we'll create strategic pairs:
-    # 1. Compare pedals of the same type
-    # 2. Compare pedals in similar price ranges
-    # 3. Limit to a reasonable number
+    video_id = None
     
-    pedals_by_type = {}
-    for pedal in pedals:
-        if pedal.pedal_type:
-            if pedal.pedal_type not in pedals_by_type:
-                pedals_by_type[pedal.pedal_type] = []
-            pedals_by_type[pedal.pedal_type].append(pedal)
+    # Try to extract video ID from different YouTube URL formats
+    patterns = [
+        r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
+    ]
     
-    # Create pairs of pedals of the same type
-    MAX_PAIRS_PER_TYPE = 10  # Limit pairs per type
-    for pedal_type, type_pedals in pedals_by_type.items():
-        pairs_count = 0
-        for i in range(len(type_pedals)):
-            if pairs_count >= MAX_PAIRS_PER_TYPE:
-                break
-            for j in range(i + 1, len(type_pedals)):
-                if pairs_count >= MAX_PAIRS_PER_TYPE:
-                    break
-                pedal1 = type_pedals[i]
-                pedal2 = type_pedals[j]
-                # Always order pedals alphabetically for consistency
-                if f"{pedal1.brand} {pedal1.pedal_model}" > f"{pedal2.brand} {pedal2.pedal_model}":
-                    pedal1, pedal2 = pedal2, pedal1
-                popular_pairs.append((pedal1, pedal2))
-                pairs_count += 1
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            video_id = match.group(1)
+            break
     
-    return popular_pairs
+    if video_id:
+        return {
+            'embed_url': f'https://www.youtube.com/embed/{video_id}',
+            'thumbnail': f'https://img.youtube.com/vi/{video_id}/maxresdefault.jpg',
+            'id': video_id
+        }
+    return None
 
 def get_sitemap_urls():
     """Generate list of URLs for sitemap"""
@@ -940,7 +948,7 @@ def get_sitemap_urls():
     urls.append({"loc": url_for('index', _external=True), "priority": "1.0"})
     urls.append({"loc": url_for('pedals', _external=True), "priority": "0.9"})
     urls.append({"loc": url_for('about', _external=True), "priority": "0.7"})
-    urls.append({"loc": url_for('compare_pedals', _external=True), "priority": "0.8"})
+    urls.append({"loc": url_for('compare', _external=True), "priority": "0.8"})
     urls.append({"loc": url_for('privacy', _external=True), "priority": "0.6"})
     
     # Add guides
@@ -1053,70 +1061,93 @@ def update_slugs():
         flash(f'Error updating slugs: {str(e)}', 'error')
     return redirect(url_for('admin_data'))
 
+# Helper functions
+def get_brands():
+    """Get list of unique brands from database."""
+    return [brand[0] for brand in db.session.query(Pedal.brand).distinct().order_by(Pedal.brand).all()]
+
+def get_types():
+    """Get list of unique pedal types from database."""
+    return [type[0] for type in db.session.query(Pedal.pedal_type).distinct().order_by(Pedal.pedal_type).all()]
+
 @app.route('/pedals')
-@cache.cached(timeout=300, query_string=True)  # Cache for 5 minutes, consider query parameters
+@cache.cached(timeout=300, query_string=True)  # Cache for 5 minutes, including query params
 def pedals():
     page = request.args.get('page', 1, type=int)
-    per_page = 24
-
-    # Get filter parameters
+    per_page = 12
     search = request.args.get('search', '').strip()
-    brand = request.args.get('brand', '')
-    pedal_type = request.args.get('type', '')
-    min_rating = request.args.get('min_rating', type=float)
-    sort = request.args.get('sort', 'newest')  # Default sort by newest
+    brand_filter = request.args.get('brand')
+    type_filter = request.args.get('type')
+    sort = request.args.get('sort', 'brand')
 
-    # Base query
-    query = Pedal.query
+    # Use cache for expensive operations
+    cache_key = f'brands_types_{hash(str(search) + str(brand_filter) + str(type_filter))}'
+    cached_data = cache.get(cache_key)
+    
+    if cached_data:
+        brands, types = cached_data
+    else:
+        brands = get_brands()
+        types = get_types()
+        cache.set(cache_key, (brands, types), timeout=3600)
 
-    # Apply search
-    if search:
-        search = search.lower()
-        combined_name = Pedal.brand.op('||')(' ').op('||')(Pedal.pedal_model)
-        query = query.filter(
-            or_(
-                func.lower(combined_name).contains(search),
-                func.lower(Pedal.brand).contains(search),
-                func.lower(Pedal.pedal_model).contains(search)
-            )
-        )
+    # Base query with eager loading and optimization for COUNT
+    query = Pedal.query.options(
+        joinedload(Pedal.ratings).load_only(Rating.rating, Rating.approved)
+    )
 
     # Apply filters
-    if brand:
-        query = query.filter(Pedal.brand == brand)
-    if pedal_type:
-        query = query.filter(Pedal.pedal_type == pedal_type)
-    if min_rating is not None:
-        query = query.filter(Pedal.my_rating >= min_rating)
+    if search:
+        # Split search terms and search across both brand and model
+        search_terms = search.lower().split()
+        conditions = []
+        for term in search_terms:
+            conditions.append(
+                db.or_(
+                    func.lower(Pedal.brand).contains(term),
+                    func.lower(Pedal.pedal_model).contains(term)
+                )
+            )
+        # Combine all conditions with AND
+        query = query.filter(db.and_(*conditions))
+    if brand_filter:
+        query = query.filter(Pedal.brand == brand_filter)
+    if type_filter:
+        query = query.filter(Pedal.pedal_type == type_filter)
 
     # Apply sorting
-    if sort == 'rating':
-        query = query.order_by(Pedal.my_rating.desc())
-    else:  # newest
-        query = query.order_by(Pedal.id.desc())
+    if sort == 'brand':
+        query = query.order_by(Pedal.brand, Pedal.pedal_model)
+    elif sort == 'type':
+        query = query.order_by(Pedal.pedal_type, Pedal.brand, Pedal.pedal_model)
+    elif sort == 'rating':
+        # This is a placeholder - implement proper rating sorting if needed
+        query = query.order_by(Pedal.brand)
 
-    # Get unique brands and types for filters
-    brands = db.session.query(Pedal.brand).distinct().order_by(Pedal.brand).all()
-    types = db.session.query(Pedal.pedal_type).distinct().order_by(Pedal.pedal_type).all()
-
-    # Paginate results
+    # Execute query with pagination
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     pedals = pagination.items
 
-    # Cache the response for better performance
+    # Calculate ratings (optimize by only loading necessary fields)
+    for pedal in pedals:
+        approved_ratings = [r.rating for r in pedal.ratings if r.approved]
+        pedal.avg_rating = sum(approved_ratings) / len(approved_ratings) if approved_ratings else 0
+        pedal.review_count = len(approved_ratings)
+
     response = make_response(render_template(
         'pedals.html',
         pedals=pedals,
         pagination=pagination,
-        brands=[brand[0] for brand in brands],
-        types=[type[0] for type in types],
-        current_type=pedal_type,
-        current_brand=brand,
-        current_min_rating=min_rating,
+        brands=brands,
+        types=types,
+        current_type=type_filter,
+        current_brand=brand_filter,
         current_sort=sort,
-        current_search=search
+        search=search
     ))
-    response.headers['Cache-Control'] = 'public, max-age=300'  # Cache for 5 minutes
+    
+    # Add page-specific cache headers
+    response.headers['Cache-Control'] = 'private, max-age=300'  # 5 minutes for logged-out users
     return response
 
 # Rate limit error handlers

@@ -5,8 +5,9 @@ python-slugify==8.0.1
 pandas==2.1.3
 Werkzeug==3.0.1
 python-dotenv==1.0.0
-Flask-Minify==0.48
+Flask-Minify>=0.42
 Flask-Migrate==4.0.7
-Flask-Caching==2.1.0
+Flask-Caching>=2.1.0
+brotli>=1.1.0
 gunicorn==21.2.0
 Markdown==3.7

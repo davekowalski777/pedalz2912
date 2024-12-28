@@ -176,6 +176,24 @@
             margin-bottom: 4rem;
         }
     }
+    .youtube-thumbnail {
+        cursor: pointer;
+    }
+    .youtube-thumbnail img {
+        transition: opacity 0.2s ease-in-out;
+    }
+    .youtube-thumbnail .play-button {
+        transition: opacity 0.2s ease-in-out;
+    }
+    .youtube-thumbnail:hover img {
+        opacity: 0.8;
+    }
+    .youtube-thumbnail:hover .play-button {
+        opacity: 1;
+    }
+    .youtube-thumbnail .play-button {
+        opacity: 0.8;
+    }
 </style>
 {% endblock %}
 
@@ -188,7 +206,7 @@
         </header>
 
         <!-- Search Form -->
-        <form id="compareForm" method="POST" action="{{ url_for('compare_pedals') }}" class="row g-3 align-items-center justify-content-center">
+        <form id="compareForm" method="POST" action="{{ url_for('compare') }}" class="row g-3 align-items-center justify-content-center">
             <div class="col-12 col-md-5">
                 <select name="pedal1" class="form-select pedal-select" data-placeholder="Choose Your First Pedal">
                     <option></option>
@@ -251,14 +269,20 @@
                     </div>
                     <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
                         {% if pedal1.demo %}
-                            <div class="ratio ratio-16x9 rounded-4 overflow-hidden">
-                                <iframe src="{{ pedal1.demo|get_youtube_embed_url }}" 
-                                        title="{{ pedal1.brand }} {{ pedal1.pedal_model }} Demo"
-                                        loading="lazy"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                        allowfullscreen>
-                                </iframe>
-                            </div>
+                            {% set youtube_data = pedal1.demo|get_youtube_embed_url %}
+                            {% if youtube_data %}
+                                <div class="youtube-player position-relative rounded-4 overflow-hidden" data-id="{{ youtube_data.id }}">
+                                    <div class="youtube-thumbnail ratio ratio-16x9">
+                                        <img src="{{ youtube_data.thumbnail }}" 
+                                             alt="Click to play demo of {{ pedal1.brand }} {{ pedal1.pedal_model }}"
+                                             class="w-100 h-100 object-fit-cover"
+                                             loading="lazy">
+                                        <button class="play-button position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-75 text-white border-0 rounded-circle p-4">
+                                            <i class="fas fa-play fa-2x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
                         {% else %}
                             <p class="text-muted mb-0">No demo video available for this pedal.</p>
                         {% endif %}
@@ -374,14 +398,20 @@
                     </div>
                     <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
                         {% if pedal2.demo %}
-                            <div class="ratio ratio-16x9 rounded-4 overflow-hidden">
-                                <iframe src="{{ pedal2.demo|get_youtube_embed_url }}" 
-                                        title="{{ pedal2.brand }} {{ pedal2.pedal_model }} Demo"
-                                        loading="lazy"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                                        allowfullscreen>
-                                </iframe>
-                            </div>
+                            {% set youtube_data = pedal2.demo|get_youtube_embed_url %}
+                            {% if youtube_data %}
+                                <div class="youtube-player position-relative rounded-4 overflow-hidden" data-id="{{ youtube_data.id }}">
+                                    <div class="youtube-thumbnail ratio ratio-16x9">
+                                        <img src="{{ youtube_data.thumbnail }}" 
+                                             alt="Click to play demo of {{ pedal2.brand }} {{ pedal2.pedal_model }}"
+                                             class="w-100 h-100 object-fit-cover"
+                                             loading="lazy">
+                                        <button class="play-button position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-75 text-white border-0 rounded-circle p-4">
+                                            <i class="fas fa-play fa-2x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
                         {% else %}
                             <p class="text-muted mb-0">No demo video available for this pedal.</p>
                         {% endif %}
@@ -474,30 +504,45 @@
     {% if similar_pedals %}
     <div class="row mb-5">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h3 class="h4 mb-0">Similar Pedals You Might Like</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                        {% for pedal in similar_pedals %}
-                        <div class="col">
-                            <div class="card h-100 border-0 shadow-sm">
-                                <img src="{{ pedal.image }}" 
-                                     class="card-img-top p-3" 
-                                     alt="{{ pedal.brand }} {{ pedal.pedal_model }}"
-                                     style="object-fit: contain; height: 200px;">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ pedal.brand }}</h5>
-                                    <h6 class="card-subtitle mb-2 text-muted">{{ pedal.pedal_model }}</h6>
-                                    <p class="card-text small">{{ pedal.what_makes_it_good|truncate(100) }}</p>
-                                    <a href="{{ url_for('pedal_detail', slug=(pedal.brand + ' ' + pedal.pedal_model)|slugify + '-review') }}" 
-                                       class="btn btn-outline-primary btn-sm">View Details</a>
+            <div class="comparison-container">
+                <h3 class="h4 mb-4">Similar Pedals You Might Like</h3>
+                <div class="row row-cols-1 row-cols-md-2 g-4">
+                    {% for pedal in similar_pedals %}
+                    <div class="col">
+                        <div class="card h-100 shadow-sm rounded-4 border-0">
+                            {% if pedal.image %}
+                            <img src="{{ pedal.image }}" 
+                                 class="card-img-top p-3" 
+                                 alt="{{ pedal.brand }} {{ pedal.pedal_model }}"
+                                 style="height: 200px; object-fit: contain;"
+                                 loading="lazy">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title mb-2">{{ pedal.brand }} {{ pedal.pedal_model }}</h5>
+                                {% if pedal.pedal_type %}
+                                <span class="badge bg-primary mb-2">{{ pedal.pedal_type }}</span>
+                                {% endif %}
+                                <p class="card-text small text-muted">
+                                    {{ (pedal.description or '')|truncate(100) }}
+                                </p>
+                                <div class="d-grid gap-2">
+                                    <a href="{{ url_for('pedal_detail', slug=(pedal.brand + ' ' + pedal.pedal_model)|lower|replace(' ', '-') + '-review') }}" 
+                                       class="btn btn-primary">
+                                        View Details
+                                    </a>
+                                    <a href="{{ url_for('compare_by_slug', pedal1=(pedal1.brand + ' ' + pedal1.pedal_model)|lower|replace(' ', '-'), pedal2=(pedal.brand + ' ' + pedal.pedal_model)|lower|replace(' ', '-')) }}"
+                                       class="btn btn-danger">
+                                        Compare with {{ pedal1.brand }} {{ pedal1.pedal_model }}
+                                    </a>
+                                    <a href="{{ url_for('compare_by_slug', pedal1=(pedal2.brand + ' ' + pedal2.pedal_model)|lower|replace(' ', '-'), pedal2=(pedal.brand + ' ' + pedal.pedal_model)|lower|replace(' ', '-')) }}"
+                                       class="btn btn-danger">
+                                        Compare with {{ pedal2.brand }} {{ pedal2.pedal_model }}
+                                    </a>
                                 </div>
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -519,6 +564,7 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
+    // Select2 initialization
     const pedalOptions = {{ pedal_suggestions|tojson|safe }}.map(name => ({
         id: name,
         text: name
@@ -551,6 +597,26 @@ $(document).ready(function() {
     if (selectedPedals === 2) {
         $('#compareButton').show();
     }
+
+    // YouTube player functionality
+    document.querySelectorAll('.youtube-player').forEach(function(player) {
+        const id = player.dataset.id;
+        const thumbnailContainer = player.querySelector('.youtube-thumbnail');
+        
+        thumbnailContainer.addEventListener('click', function() {
+            const iframe = document.createElement('iframe');
+            iframe.setAttribute('src', `https://www.youtube.com/embed/${id}?autoplay=1`);
+            iframe.setAttribute('title', 'YouTube video player');
+            iframe.setAttribute('frameborder', '0');
+            iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+            iframe.setAttribute('allowfullscreen', '');
+            iframe.classList.add('w-100', 'h-100', 'position-absolute', 'top-0', 'start-0');
+            
+            // Clear the thumbnail container and append the iframe
+            thumbnailContainer.innerHTML = '';
+            thumbnailContainer.appendChild(iframe);
+        });
+    });
 });
 </script>
 {% endblock %}

@@ -6,7 +6,7 @@
 
 {% block head %}
     <!-- Canonical URL -->
-    <link rel="canonical" href="{{ url_for('pedal_detail', slug=(pedal.brand + ' ' + pedal.pedal_model)|slugify + '-review', _external=True) }}" />
+    <link rel="canonical" href="{{ url_for('pedal_detail', slug=(pedal.brand + ' ' + pedal.pedal_model)|lower|replace(' ', '-') + '-review', _external=True) }}" />
     
     <!-- If this is the non-review version, tell crawlers not to index it -->
     {% if not request.path.endswith('-review') %}
@@ -95,13 +95,20 @@
 
     <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
         {% if pedal.demo %}
-            <div class="ratio ratio-16x9 rounded-4 overflow-hidden">
-                <iframe src="{{ pedal.demo|get_youtube_embed_url }}" 
-                        title="YouTube video player" 
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                        allowfullscreen>
-                </iframe>
-            </div>
+            {% set youtube_data = pedal.demo|get_youtube_embed_url %}
+            {% if youtube_data %}
+                <div class="youtube-player position-relative rounded-4 overflow-hidden" data-id="{{ youtube_data.id }}">
+                    <div class="youtube-thumbnail ratio ratio-16x9">
+                        <img src="{{ youtube_data.thumbnail }}" 
+                             alt="Click to play demo of {{ pedal.brand }} {{ pedal.pedal_model }}"
+                             class="w-100 h-100 object-fit-cover"
+                             loading="lazy">
+                        <button class="play-button position-absolute top-50 start-50 translate-middle bg-dark bg-opacity-75 text-white border-0 rounded-circle p-4">
+                            <i class="fas fa-play fa-2x"></i>
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
         {% else %}
             <p class="text-muted mb-0">No demo video available for this pedal.</p>
         {% endif %}
@@ -378,11 +385,11 @@
                                             {{ (similar_pedal.description or '')|truncate(100) }}
                                         </p>
                                         <div class="d-grid gap-2">
-                                            <a href="{{ url_for('pedal_detail', slug=(similar_pedal.brand + ' ' + similar_pedal.pedal_model)|slugify + '-review') }}" 
+                                            <a href="{{ url_for('pedal_detail', slug=(similar_pedal.brand + ' ' + similar_pedal.pedal_model)|lower|replace(' ', '-') + '-review') }}" 
                                                class="btn btn-primary">
                                                 View Details
                                             </a>
-                                            <a href="{{ url_for('compare_pedals_by_slug', pedal1=(pedal.brand + ' ' + pedal.pedal_model)|slugify, pedal2=(similar_pedal.brand + ' ' + similar_pedal.pedal_model)|slugify) }}"
+                                            <a href="{{ url_for('compare_by_slug', pedal1=(pedal.brand + ' ' + pedal.pedal_model)|lower|replace(' ', '-'), pedal2=(similar_pedal.brand + ' ' + similar_pedal.pedal_model)|lower|replace(' ', '-')) }}"
                                                class="btn btn-danger">
                                                 Compare
                                             </a>
@@ -699,28 +706,51 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Rating stars functionality
         const ratingContainer = document.querySelector('.rating-input');
-        const ratingLabels = ratingContainer.querySelectorAll('.rating-label');
+        if (ratingContainer) {
+            const ratingLabels = ratingContainer.querySelectorAll('.rating-label');
 
-        function updateStars(targetRating) {
-            ratingLabels.forEach(l => {
-                const value = parseInt(l.querySelector('input').value);
-                const s = l.querySelector('i');
-                if (value <= targetRating) {
-                    s.classList.remove('far');
-                    s.classList.add('fas');
-                } else {
-                    s.classList.remove('fas');
-                    s.classList.add('far');
-                }
+            function updateStars(targetRating) {
+                ratingLabels.forEach(l => {
+                    const value = parseInt(l.querySelector('input').value);
+                    const s = l.querySelector('i');
+                    if (value <= targetRating) {
+                        s.classList.remove('far');
+                        s.classList.add('fas');
+                    } else {
+                        s.classList.remove('fas');
+                        s.classList.add('far');
+                    }
+                });
+            }
+
+            // Handle clicks only
+            ratingLabels.forEach(label => {
+                label.addEventListener('click', function() {
+                    const rating = parseInt(this.querySelector('input').value);
+                    updateStars(rating);
+                });
             });
         }
 
-        // Handle clicks only
-        ratingLabels.forEach(label => {
-            label.addEventListener('click', function() {
-                const rating = parseInt(this.querySelector('input').value);
-                updateStars(rating);
+        // YouTube player functionality
+        document.querySelectorAll('.youtube-player').forEach(function(player) {
+            const id = player.dataset.id;
+            const thumbnailContainer = player.querySelector('.youtube-thumbnail');
+            
+            thumbnailContainer.addEventListener('click', function() {
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('src', `https://www.youtube.com/embed/${id}?autoplay=1`);
+                iframe.setAttribute('title', 'YouTube video player');
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.classList.add('w-100', 'h-100', 'position-absolute', 'top-0', 'start-0');
+                
+                // Clear the thumbnail container instead of replacing it
+                thumbnailContainer.innerHTML = '';
+                thumbnailContainer.appendChild(iframe);
             });
         });
     });
