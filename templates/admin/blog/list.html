@@ -1,0 +1,101 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Blog Posts{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Blog Posts</h1>
+        <a href="{{ url_for('admin_blog_new') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>New Post
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Updated</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for post in posts %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ post.title }}</div>
+                                <div class="text-muted small">{{ post.slug }}</div>
+                            </td>
+                            <td>
+                                {% if post.published %}
+                                <span class="badge bg-success">Published</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Draft</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ post.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ post.updated_at.strftime('%Y-%m-%d') }}</td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a href="{{ url_for('admin_blog_edit', id=post.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="confirmDelete('{{ post.id }}', '{{ post.title }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">
+                                <i class="fas fa-blog fa-2x mb-3 d-block"></i>
+                                No blog posts yet. 
+                                <a href="{{ url_for('admin_blog_new') }}" class="text-primary">Create your first post</a>.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete "<span id="postTitle"></span>"?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDelete(id, title) {
+    document.getElementById('postTitle').textContent = title;
+    document.getElementById('deleteForm').action = "{{ url_for('admin_blog_delete', id=0) }}".replace('0', id);
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}

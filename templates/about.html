@@ -1,0 +1,53 @@
+{% extends "layout.html" %}
+
+{% block title %}About GuitarPedalDB - Your Guitar Effects Resource{% endblock %}
+
+{% block meta_description %}Learn about GuitarPedalDB, your trusted source for guitar pedal reviews, ratings, and recommendations. Our mission is to help guitarists find their perfect tone.{% endblock %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item active">About</li>
+        </ol>
+    </nav>
+
+    <div class="card">
+        <div class="card-body">
+            <h1 class="mb-4">About GuitarPedalDB</h1>
+            
+            <p>Welcome to GuitarPedalDB, your ultimate resource for guitar pedal information and reviews. Our mission is to help guitarists of all skill levels find the perfect pedals to enhance their sound and creativity.</p>
+
+            <h2 class="h4 mt-4 mb-3">What We Do</h2>
+            <p>We provide detailed information about various guitar pedals, including:</p>
+            <ul>
+                <li>Comprehensive pedal reviews and ratings</li>
+                <li>Technical specifications and features</li>
+                <li>Sound samples and demonstrations</li>
+                <li>User reviews and experiences</li>
+                <li>Comparisons and recommendations</li>
+            </ul>
+
+            <h2 class="h4 mt-4 mb-3">Our Values</h2>
+            <p>At GuitarPedalDB, we believe in:</p>
+            <ul>
+                <li>Providing accurate and unbiased information</li>
+                <li>Building a community of passionate musicians</li>
+                <li>Helping guitarists make informed decisions</li>
+                <li>Sharing knowledge and experiences</li>
+            </ul>
+
+            <h2 class="h4 mt-4 mb-3">Contact Us</h2>
+            <div class="contact-info">
+                <h3 class="h4 mb-3">Contact</h3>
+                <p>Questions, suggestions, or feedback? We'd love to hear from you!</p>
+                <p><i class="fas fa-envelope me-2"></i><a href="mailto:itsdavekowalski@gmail.com">itsdavekowalski@gmail.com</a></p>
+            </div>
+
+            <h2 class="h4 mt-4 mb-3">Affiliate Disclosure</h2>
+            <p>GuitarPedalDB is a participant in various affiliate programs. This means that we may earn commissions on qualifying purchases made through links on our site. This helps support our work in maintaining and improving the database, but does not affect our editorial independence or the prices you pay. We are committed to providing honest, unbiased information regardless of affiliate relationships.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

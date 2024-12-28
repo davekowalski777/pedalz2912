@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <!-- Pedal Body -->
+    <rect x="4" y="4" width="24" height="24" rx="3" fill="#2c3e50"/>
+    
+    <!-- Stylized Guitar -->
+    <path d="M16 8 L20 8 L20 12 L23 15 L23 20 L20 23 L16 23 L12 23 L9 20 L9 15 L12 12 L12 8 Z" 
+          fill="#3498db" stroke="#2c3e50" stroke-width="1"/>
+    
+    <!-- Guitar Neck -->
+    <rect x="15" y="6" width="2" height="4" fill="#3498db"/>
+    
+    <!-- Guitar Strings -->
+    <line x1="11" y1="14" x2="21" y2="14" stroke="#2c3e50" stroke-width="0.5"/>
+    <line x1="11" y1="16" x2="21" y2="16" stroke="#2c3e50" stroke-width="0.5"/>
+    <line x1="11" y1="18" x2="21" y2="18" stroke="#2c3e50" stroke-width="0.5"/>
+    <line x1="11" y1="20" x2="21" y2="20" stroke="#2c3e50" stroke-width="0.5"/>
+    
+    <!-- Sound Hole -->
+    <circle cx="16" cy="17" r="2" fill="#2c3e50"/>
+    
+    <!-- Input/Output Jacks -->
+    <rect x="2" y="14" width="2" height="4" fill="#3498db"/>
+    <rect x="28" y="14" width="2" height="4" fill="#3498db"/>
+</svg>

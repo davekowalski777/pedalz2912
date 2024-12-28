@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ post.meta_title if post.meta_title else post.title }}{% endblock %}
+
+{% block meta_description %}{{ post.meta_description }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <article class="blog-post">
+        <!-- Header -->
+        <header class="mb-5">
+            <h1 class="display-4 fw-bold mb-4">{{ post.title }}</h1>
+            <div class="d-flex align-items-center text-muted">
+                <div class="me-4">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    {{ post.created_at.strftime('%B %d, %Y') }}
+                </div>
+                {% if post.updated_at != post.created_at %}
+                <div>
+                    <i class="fas fa-edit me-2"></i>
+                    Updated {{ post.updated_at.strftime('%B %d, %Y') }}
+                </div>
+                {% endif %}
+            </div>
+        </header>
+
+        {% if post.featured_image %}
+        <div class="mb-5">
+            <img src="{{ post.featured_image }}" class="img-fluid rounded-4" alt="{{ post.title }}">
+        </div>
+        {% endif %}
+
+        <!-- Content -->
+        <div class="blog-content">
+            {{ post.content|safe }}
+        </div>
+    </article>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .blog-content {
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+    .blog-content p {
+        margin-bottom: 1.5rem;
+    }
+    .blog-content h2 {
+        font-weight: bold;
+        margin-top: 2.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .blog-content h3 {
+        font-weight: bold;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+    }
+    .blog-content ul, .blog-content ol {
+        margin-bottom: 1.5rem;
+    }
+    .blog-content li {
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}

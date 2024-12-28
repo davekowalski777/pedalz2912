@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /pedal/*/edit
+Disallow: /pedal/add
+
+# Don't index non-review pedal pages
+Disallow: /pedal/*
+Allow: /pedal/*-review
+
+Sitemap: https://guitarpedaldb.com/sitemap.xml

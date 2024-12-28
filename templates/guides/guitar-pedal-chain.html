@@ -1,0 +1,262 @@
+{% extends "layout.html" %}
+
+{% block title %}Guitar Pedal Chain Order Guide - How to Connect Effects Pedals{% endblock %}
+
+{% block meta_description %}Master your pedal chain setup with our comprehensive guide. Learn the optimal order for connecting guitar effects pedals and get the best possible tone from your rig.{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <article class="blog-post">
+        <!-- Header -->
+        <header class="mb-5">
+            <h1 class="display-4 fw-bold mb-4">The Right Guitar Pedal Chain</h1>
+            <div class="text-muted">
+                <i class="fas fa-book-reader me-2"></i> Setup Guide
+            </div>
+        </header>
+
+        <!-- Introduction -->
+        <div class="lead mb-5">
+            The order of your pedals (your signal chain) can dramatically affect your overall tone. Here's a comprehensive guide to creating the perfect pedal chain.
+        </div>
+
+        <!-- Visual Signal Chain -->
+        <section class="mb-5">
+            <div class="card border-0 shadow-sm rounded-4 bg-primary bg-opacity-10">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap">
+                        <div class="text-center p-3">
+                            <i class="fas fa-guitar fa-2x text-primary mb-2"></i>
+                            <div>Guitar</div>
+                        </div>
+                        <i class="fas fa-arrow-right text-primary"></i>
+                        <div class="text-center p-3">
+                            <i class="fas fa-broadcast-tower fa-2x text-primary mb-2"></i>
+                            <div>Tuner</div>
+                        </div>
+                        <i class="fas fa-arrow-right text-primary"></i>
+                        <div class="text-center p-3">
+                            <i class="fas fa-sliders-h fa-2x text-primary mb-2"></i>
+                            <div>Dynamics</div>
+                        </div>
+                        <i class="fas fa-arrow-right text-primary"></i>
+                        <div class="text-center p-3">
+                            <i class="fas fa-bolt fa-2x text-primary mb-2"></i>
+                            <div>Gain</div>
+                        </div>
+                        <i class="fas fa-arrow-right text-primary"></i>
+                        <div class="text-center p-3">
+                            <i class="fas fa-wave-square fa-2x text-primary mb-2"></i>
+                            <div>Modulation</div>
+                        </div>
+                        <i class="fas fa-arrow-right text-primary"></i>
+                        <div class="text-center p-3">
+                            <i class="fas fa-clock fa-2x text-primary mb-2"></i>
+                            <div>Time-Based</div>
+                        </div>
+                        <i class="fas fa-arrow-right text-primary"></i>
+                        <div class="text-center p-3">
+                            <i class="fas fa-volume-up fa-2x text-primary mb-2"></i>
+                            <div>Amp</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Standard Pedal Order -->
+        <section class="mb-5">
+            <h2 class="h2 fw-bold mb-4">The Standard Pedal Order</h2>
+            <p class="mb-4">While there's room for experimentation, here's the traditional order that works for most situations:</p>
+            
+            <div class="row g-4">
+                <!-- 1. Tuner -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-primary me-2">1</span>
+                                <h3 class="h4 fw-bold mb-0">Tuner</h3>
+                            </div>
+                            <p class="mb-0">
+                                Place your tuner first to get the cleanest signal for accurate tuning. It should also have a bypass feature to mute your signal when tuning.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Dynamics/Filters -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-primary me-2">2</span>
+                                <h3 class="h4 fw-bold mb-0">Dynamics/Filters</h3>
+                            </div>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2"><i class="fas fa-angle-right text-primary me-2"></i>Wah pedal</li>
+                                <li class="mb-2"><i class="fas fa-angle-right text-primary me-2"></i>Compressor</li>
+                                <li class="mb-2"><i class="fas fa-angle-right text-primary me-2"></i>EQ</li>
+                                <li><i class="fas fa-angle-right text-primary me-2"></i>Volume pedal (can also go last)</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Gain Stages -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-primary me-2">3</span>
+                                <h3 class="h4 fw-bold mb-0">Gain Stages</h3>
+                            </div>
+                            <ul class="list-unstyled mb-3">
+                                <li class="mb-2"><i class="fas fa-angle-right text-primary me-2"></i>Overdrive</li>
+                                <li class="mb-2"><i class="fas fa-angle-right text-primary me-2"></i>Distortion</li>
+                                <li><i class="fas fa-angle-right text-primary me-2"></i>Fuzz</li>
+                            </ul>
+                            <div class="alert alert-primary mb-0">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                Arrange from lowest to highest gain for the most versatile sound options.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Modulation -->
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-primary me-2">4</span>
+                                <h3 class="h4 fw-bold mb-0">Modulation</h3>
+                            </div>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2"><i class="fas fa-angle-right text-primary me-2"></i>Chorus</li>
+                                <li class="mb-2"><i class="fas fa-angle-right text-primary me-2"></i>Flanger</li>
+                                <li class="mb-2"><i class="fas fa-angle-right text-primary me-2"></i>Phaser</li>
+                                <li><i class="fas fa-angle-right text-primary me-2"></i>Tremolo</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Time-Based Effects -->
+                <div class="col-12">
+                    <div class="card h-100 border-0 shadow-sm rounded-4">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <span class="badge bg-primary me-2">5</span>
+                                <h3 class="h4 fw-bold mb-0">Time-Based Effects</h3>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <ul class="list-unstyled mb-3 mb-md-0">
+                                        <li class="mb-2"><i class="fas fa-angle-right text-primary me-2"></i>Delay</li>
+                                        <li><i class="fas fa-angle-right text-primary me-2"></i>Reverb</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="alert alert-primary mb-0">
+                                        <i class="fas fa-lightbulb me-2"></i>
+                                        Reverb usually goes last to create a natural space for all other effects.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Signal Chain Considerations -->
+        <section class="mb-5">
+            <h2 class="h2 fw-bold mb-4">Signal Chain Considerations</h2>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4">
+                        <div class="card-body">
+                            <h3 class="h5 fw-bold mb-3">Technical Factors</h3>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-3">
+                                    <i class="fas fa-microchip text-primary me-2"></i>
+                                    <strong>Buffer placement</strong>
+                                    <div class="text-muted ms-4">Start and end of chain for signal integrity</div>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-plug text-primary me-2"></i>
+                                    <strong>Cable length and quality</strong>
+                                    <div class="text-muted ms-4">Use high-quality, shorter cables when possible</div>
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-bolt text-primary me-2"></i>
+                                    <strong>Power supply isolation</strong>
+                                    <div class="text-muted ms-4">Prevents unwanted noise and interference</div>
+                                </li>
+                                <li>
+                                    <i class="fas fa-random text-primary me-2"></i>
+                                    <strong>True bypass vs. buffered bypass</strong>
+                                    <div class="text-muted ms-4">Balance based on your total chain length</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4">
+                        <div class="card-body">
+                            <h3 class="h5 fw-bold mb-3">Common Variations</h3>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-3">
+                                    <i class="fas fa-volume-up text-primary me-2"></i>
+                                    Volume pedal can go before or after drive pedals
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-filter text-primary me-2"></i>
+                                    Wah can go after drive for a different character
+                                </li>
+                                <li class="mb-3">
+                                    <i class="fas fa-wave-square text-primary me-2"></i>
+                                    Some players prefer modulation before drive
+                                </li>
+                                <li>
+                                    <i class="fas fa-project-diagram text-primary me-2"></i>
+                                    Parallel effects loops for more complex setups
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pro Tips -->
+        <section class="mb-5">
+            <div class="card border-0 shadow-sm rounded-4 bg-primary bg-opacity-10">
+                <div class="card-body">
+                    <h2 class="h4 fw-bold mb-3">
+                        <i class="fas fa-star text-primary me-2"></i>
+                        Pro Tips
+                    </h2>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-check text-primary me-2"></i>
+                            Experiment with different orders to find your perfect tone
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check text-primary me-2"></i>
+                            Consider using a loop switcher for complex setups
+                        </li>
+                        <li>
+                            <i class="fas fa-check text-primary me-2"></i>
+                            Keep your most-used effects easily accessible
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </article>
+</div>
+{% endblock %}

@@ -1,0 +1,556 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    {%- if pedal1 and pedal2 -%}
+        {{ pedal1.brand }} {{ pedal1.pedal_model }} vs {{ pedal2.brand }} {{ pedal2.pedal_model }} - Pedal Comparison Side-By-Side
+    {%- else -%}
+        Compare Guitar Pedals - Side by Side Comparison
+    {%- endif -%}
+{%- endblock %}
+
+{% block meta_description -%}
+    {%- if pedal1 and pedal2 -%}
+        Compare {{ pedal1.brand }} {{ pedal1.pedal_model }} vs {{ pedal2.brand }} {{ pedal2.pedal_model }}. See features, ratings and reviews side by side.
+    {%- else -%}
+        Compare guitar pedals side by side. See detailed specifications, features, ratings, and reviews to help you choose the right pedal for your needs.
+    {%- endif -%}
+{%- endblock %}
+
+{% block head %}
+    {# Preload critical images #}
+    {% if pedal1 and pedal2 %}
+        <link rel="preload" as="image" href="{{ pedal1.image }}" fetchpriority="high">
+        <link rel="preload" as="image" href="{{ pedal2.image }}" fetchpriority="high">
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container {
+        width: 100% !important;
+    }
+    .select2-selection {
+        height: 50px !important;
+        border: 2px solid #e9ecef !important;
+        border-radius: 12px !important;
+        padding: 8px !important;
+        font-size: 1.1rem !important;
+        background-color: white !important;
+        transition: border-color 0.2s ease-in-out !important;
+    }
+    .select2-selection:hover {
+        border-color: var(--bs-primary) !important;
+    }
+    .select2-selection__rendered {
+        line-height: 32px !important;
+        padding-left: 8px !important;
+    }
+    .select2-selection__placeholder {
+        color: #6c757d !important;
+    }
+    .select2-selection__arrow {
+        height: 46px !important;
+    }
+    .select2-dropdown {
+        border: 2px solid var(--bs-primary) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+    }
+    .select2-results__option {
+        padding: 10px 15px !important;
+        font-size: 1rem !important;
+    }
+    .select2-results__option--highlighted {
+        background-color: var(--bs-primary) !important;
+    }
+    .vs-badge {
+        width: 50px;
+        height: 50px;
+        background-color: var(--bs-primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin: 0 1rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .comparison-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 4rem 0;
+        margin-bottom: 3rem;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .comparison-container {
+        background-color: white;
+        border-radius: 1rem;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+        margin-bottom: 3rem;
+    }
+    .comparison-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        text-align: center;
+        margin-bottom: 2rem;
+        background: linear-gradient(45deg, var(--bs-primary), #6610f2);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .comparison-subtitle {
+        text-align: center;
+        color: #6c757d;
+        font-size: 1.2rem;
+        margin-bottom: 3rem;
+    }
+    .spec-section {
+        background-color: #f8f9fa;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s ease-in-out;
+    }
+    .spec-section:hover {
+        transform: translateY(-2px);
+    }
+    .pedal-image {
+        max-height: 300px;
+        object-fit: contain;
+        margin-bottom: 2rem;
+        transition: transform 0.3s ease-in-out;
+    }
+    .pedal-image:hover {
+        transform: scale(1.05);
+    }
+    .pedal-title {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+    .rating-bar {
+        height: 12px;
+        border-radius: 6px;
+        background-color: #e9ecef;
+        overflow: hidden;
+        margin: 1rem 0;
+    }
+    .rating-fill {
+        height: 100%;
+        border-radius: 6px;
+        transition: width 1s ease-in-out;
+    }
+    .feature-list {
+        list-style: none !important;
+        padding-left: 0;
+    }
+    .feature-list li {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 0.5rem;
+    }
+    .feature-list li i {
+        margin-top: 0.25rem;
+        min-width: 1.25rem;
+    }
+    @media (max-width: 768px) {
+        .comparison-header {
+            padding: 2rem 0;
+        }
+        .comparison-title {
+            font-size: 2rem;
+        }
+        .vs-badge {
+            margin: 1rem 0;
+        }
+        .comparison-form {
+            flex-direction: column;
+        }
+        .flex-grow-1 {
+            margin-bottom: 2rem;
+        }
+        .flex-grow-1:last-child {
+            margin-bottom: 4rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="comparison-header">
+    <div class="container">
+        <header class="text-center mb-5">
+            <h1 class="display-4 fw-bold mb-3">Compare Guitar Pedals</h1>
+            <p class="lead text-muted">Select two pedals to compare their features, ratings, and reviews side by side.</p>
+        </header>
+
+        <!-- Search Form -->
+        <form id="compareForm" method="POST" action="{{ url_for('compare_pedals') }}" class="row g-3 align-items-center justify-content-center">
+            <div class="col-12 col-md-5">
+                <select name="pedal1" class="form-select pedal-select" data-placeholder="Choose Your First Pedal">
+                    <option></option>
+                    {% if pedal1 %}
+                        <option value="{{ pedal1.brand }} {{ pedal1.pedal_model }}" selected>
+                            {{ pedal1.brand }} {{ pedal1.pedal_model }}
+                        </option>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="col-12 col-md-2 text-center">
+                <span class="vs-text">VS</span>
+            </div>
+            <div class="col-12 col-md-5">
+                <select name="pedal2" class="form-select pedal-select" data-placeholder="Choose Your Second Pedal">
+                    <option></option>
+                    {% if pedal2 %}
+                        <option value="{{ pedal2.brand }} {{ pedal2.pedal_model }}" selected>
+                            {{ pedal2.brand }} {{ pedal2.pedal_model }}
+                        </option>
+                    {% endif %}
+                </select>
+            </div>
+            <div class="col-12 text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg" id="compareButton" style="display: none;">
+                    Compare Pedals
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="container">
+    {% if pedal1 and pedal2 %}
+    <div class="row comparison-container">
+        <div class="col-12 col-md-6 border-md-end mb-4 mb-md-0">
+            <!-- Pedal 1 Details -->
+            <div class="text-center">
+                <img src="{{ pedal1.image }}" 
+                     alt="{{ pedal1.brand }} {{ pedal1.pedal_model }}"
+                     class="img-fluid rounded-4 pedal-image"
+                     width="300"
+                     height="300"
+                     fetchpriority="high"
+                     style="aspect-ratio: 1; object-fit: contain;">
+                <h2 class="pedal-title">{{ pedal1.brand }} {{ pedal1.pedal_model }}</h2>
+                {% if pedal1.affiliate_link %}
+                <a href="{{ pedal1.affiliate_link }}" target="_blank" rel="nofollow" class="btn btn-primary btn-lg mt-3">
+                    <i class="fas fa-shopping-cart me-2"></i>View on Thomann
+                </a>
+                {% endif %}
+                
+                <!-- Demo Section -->
+                <section class="mt-4 mb-5">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                            <i class="fas fa-play text-primary"></i>
+                        </div>
+                        <h3 class="h4 mb-0 fw-bold">Demo</h3>
+                    </div>
+                    <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+                        {% if pedal1.demo %}
+                            <div class="ratio ratio-16x9 rounded-4 overflow-hidden">
+                                <iframe src="{{ pedal1.demo|get_youtube_embed_url }}" 
+                                        title="{{ pedal1.brand }} {{ pedal1.pedal_model }} Demo"
+                                        loading="lazy"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">No demo video available for this pedal.</p>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Rating -->
+            <div class="spec-section">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                        <i class="fas fa-star text-primary"></i>
+                    </div>
+                    <h3 class="h5 mb-0">Our Rating</h3>
+                </div>
+                {% if pedal1.my_rating %}
+                    <div class="text-center">
+                        <div class="display-4 fw-bold text-primary mb-3">{{ "%.1f"|format(pedal1.my_rating) }}/10</div>
+                        <div class="rating-bar">
+                            <div class="rating-fill" style="width: {{ (pedal1.my_rating / 10) * 100 }}%; 
+                                background-color: {% if pedal1.my_rating >= 8 %}#28a745
+                                               {% elif pedal1.my_rating >= 5 %}#ffc107
+                                               {% else %}#dc3545{% endif %};">
+                            </div>
+                        </div>
+                        <a href="{{ url_for('pedal_detail', slug=(pedal1.brand + ' ' + pedal1.pedal_model)|slugify + '-review') }}" 
+                           class="btn btn-primary mt-3">
+                            <i class="fas fa-book-open me-2"></i>Read Our Review
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center mb-0">No rating available</p>
+                {% endif %}
+            </div>
+
+            <!-- Features -->
+            <div class="spec-section">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                        <i class="fas fa-sliders-h text-primary"></i>
+                    </div>
+                    <h3 class="h5 mb-0">Features</h3>
+                </div>
+                {% if pedal1.features %}
+                    <div class="features-list">
+                        {% for feature in pedal1.features|split_features %}
+                            <div class="d-flex align-items-start mb-2">
+                                <i class="fas fa-check text-success me-3 mt-1"></i>
+                                <span>{{ feature|markdown_to_html|safe }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No features available.</p>
+                {% endif %}
+            </div>
+
+            <!-- Best For -->
+            <div class="spec-section">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                        <i class="fas fa-guitar text-primary"></i>
+                    </div>
+                    <h3 class="h5 mb-0">Best For</h3>
+                </div>
+                {% if pedal1.best_for %}
+                    <p class="mb-0">{{ pedal1.best_for }}</p>
+                {% else %}
+                    <p class="text-muted mb-0">No best-for information available.</p>
+                {% endif %}
+            </div>
+
+            <!-- What Makes It Good -->
+            <div class="spec-section">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                        <i class="fas fa-thumbs-up text-primary"></i>
+                    </div>
+                    <h3 class="h5 mb-0">What Makes It Good</h3>
+                </div>
+                {% if pedal1.what_makes_it_good %}
+                    <p class="mb-0">{{ pedal1.what_makes_it_good }}</p>
+                {% else %}
+                    <p class="text-muted mb-0">No information available.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+            <!-- Pedal 2 Details -->
+            <div class="text-center">
+                <img src="{{ pedal2.image }}" 
+                     alt="{{ pedal2.brand }} {{ pedal2.pedal_model }}"
+                     class="img-fluid rounded-4 pedal-image"
+                     width="300"
+                     height="300"
+                     fetchpriority="high"
+                     style="aspect-ratio: 1; object-fit: contain;">
+                <h2 class="pedal-title">{{ pedal2.brand }} {{ pedal2.pedal_model }}</h2>
+                {% if pedal2.affiliate_link %}
+                <a href="{{ pedal2.affiliate_link }}" target="_blank" rel="nofollow" class="btn btn-primary btn-lg mt-3">
+                    <i class="fas fa-shopping-cart me-2"></i>View on Thomann
+                </a>
+                {% endif %}
+                
+                <!-- Demo Section -->
+                <section class="mt-4 mb-5">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                            <i class="fas fa-play text-primary"></i>
+                        </div>
+                        <h3 class="h4 mb-0 fw-bold">Demo</h3>
+                    </div>
+                    <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+                        {% if pedal2.demo %}
+                            <div class="ratio ratio-16x9 rounded-4 overflow-hidden">
+                                <iframe src="{{ pedal2.demo|get_youtube_embed_url }}" 
+                                        title="{{ pedal2.brand }} {{ pedal2.pedal_model }} Demo"
+                                        loading="lazy"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">No demo video available for this pedal.</p>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Rating -->
+            <div class="spec-section">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                        <i class="fas fa-star text-primary"></i>
+                    </div>
+                    <h3 class="h5 mb-0">Our Rating</h3>
+                </div>
+                {% if pedal2.my_rating %}
+                    <div class="text-center">
+                        <div class="display-4 fw-bold text-primary mb-3">{{ "%.1f"|format(pedal2.my_rating) }}/10</div>
+                        <div class="rating-bar">
+                            <div class="rating-fill" style="width: {{ (pedal2.my_rating / 10) * 100 }}%; 
+                                background-color: {% if pedal2.my_rating >= 8 %}#28a745
+                                               {% elif pedal2.my_rating >= 5 %}#ffc107
+                                               {% else %}#dc3545{% endif %};">
+                            </div>
+                        </div>
+                        <a href="{{ url_for('pedal_detail', slug=(pedal2.brand + ' ' + pedal2.pedal_model)|slugify + '-review') }}" 
+                           class="btn btn-primary mt-3">
+                            <i class="fas fa-book-open me-2"></i>Read Our Review
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center mb-0">No rating available</p>
+                {% endif %}
+            </div>
+
+            <!-- Features -->
+            <div class="spec-section">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                        <i class="fas fa-sliders-h text-primary"></i>
+                    </div>
+                    <h3 class="h5 mb-0">Features</h3>
+                </div>
+                {% if pedal2.features %}
+                    <div class="features-list">
+                        {% for feature in pedal2.features|split_features %}
+                            <div class="d-flex align-items-start mb-2">
+                                <i class="fas fa-check text-success me-3 mt-1"></i>
+                                <span>{{ feature|markdown_to_html|safe }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No features available.</p>
+                {% endif %}
+            </div>
+
+            <!-- Best For -->
+            <div class="spec-section">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                        <i class="fas fa-guitar text-primary"></i>
+                    </div>
+                    <h3 class="h5 mb-0">Best For</h3>
+                </div>
+                {% if pedal2.best_for %}
+                    <p class="mb-0">{{ pedal2.best_for }}</p>
+                {% else %}
+                    <p class="text-muted mb-0">No best-for information available.</p>
+                {% endif %}
+            </div>
+
+            <!-- What Makes It Good -->
+            <div class="spec-section">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                        <i class="fas fa-thumbs-up text-primary"></i>
+                    </div>
+                    <h3 class="h5 mb-0">What Makes It Good</h3>
+                </div>
+                {% if pedal2.what_makes_it_good %}
+                    <p class="mb-0">{{ pedal2.what_makes_it_good }}</p>
+                {% else %}
+                    <p class="text-muted mb-0">No information available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if similar_pedals %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h3 class="h4 mb-0">Similar Pedals You Might Like</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        {% for pedal in similar_pedals %}
+                        <div class="col">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <img src="{{ pedal.image }}" 
+                                     class="card-img-top p-3" 
+                                     alt="{{ pedal.brand }} {{ pedal.pedal_model }}"
+                                     style="object-fit: contain; height: 200px;">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ pedal.brand }}</h5>
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ pedal.pedal_model }}</h6>
+                                    <p class="card-text small">{{ pedal.what_makes_it_good|truncate(100) }}</p>
+                                    <a href="{{ url_for('pedal_detail', slug=(pedal.brand + ' ' + pedal.pedal_model)|slugify + '-review') }}" 
+                                       class="btn btn-outline-primary btn-sm">View Details</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-center text-muted mt-4">
+        <div class="mb-4">
+            <i class="fas fa-search fa-3x text-primary opacity-50"></i>
+        </div>
+        <h3 class="h4 mb-3">Start Comparing Pedals</h3>
+        <p class="lead">Select two pedals above to see their features side by side</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    const pedalOptions = {{ pedal_suggestions|tojson|safe }}.map(name => ({
+        id: name,
+        text: name
+    }));
+
+    $('.pedal-select').select2({
+        width: '100%',
+        placeholder: 'Choose Your Pedal...',
+        allowClear: true,
+        data: pedalOptions
+    }).on('select2:select select2:unselect', function(e) {
+        // Check if both pedals are selected
+        const form = $(this).closest('form');
+        const selectedPedals = form.find('.pedal-select').filter(function() {
+            return $(this).val() !== '';
+        }).length;
+        
+        // Show/hide compare button based on selection
+        if (selectedPedals === 2) {
+            $('#compareButton').fadeIn(200);
+        } else {
+            $('#compareButton').fadeOut(200);
+        }
+    });
+
+    // Initialize button visibility on page load
+    const selectedPedals = $('.pedal-select').filter(function() {
+        return $(this).val() !== '';
+    }).length;
+    if (selectedPedals === 2) {
+        $('#compareButton').show();
+    }
+});
+</script>
+{% endblock %}

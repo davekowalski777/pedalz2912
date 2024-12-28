@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}Error {{ error_code }} - Guitar Pedal Reviews{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="display-1 text-danger mb-4">{{ error_code }}</h1>
+            <h2 class="h4 mb-4">{{ error_message }}</h2>
+            
+            {% if error_code == 429 %}
+            <p class="text-muted mb-4">Our system detected too many requests from your IP address. This limit helps us prevent abuse and ensure a fair experience for all users.</p>
+            {% endif %}
+            
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="fas fa-home me-2"></i>Return to Homepage
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

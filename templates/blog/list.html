@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <header class="mb-5">
+        <h1 class="display-4 fw-bold mb-4">Blog</h1>
+        <div class="text-muted">
+            Latest articles about guitar pedals, effects, and tone crafting
+        </div>
+    </header>
+
+    <div class="row g-4">
+        {% for post in posts %}
+        <div class="col-md-6 col-lg-4">
+            <article class="card h-100 border-0 shadow-sm rounded-4">
+                {% if post.featured_image %}
+                <img src="{{ post.featured_image }}" class="card-img-top rounded-top-4" alt="{{ post.title }}">
+                {% endif %}
+                <div class="card-body">
+                    <h2 class="h4 fw-bold mb-3">
+                        <a href="{{ url_for('blog_post', slug=post.slug) }}" class="text-decoration-none text-dark">
+                            {{ post.title }}
+                        </a>
+                    </h2>
+                    <p class="text-muted mb-3">{{ post.meta_description }}</p>
+                    <div class="d-flex align-items-center text-muted small">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        {{ post.created_at.strftime('%B %d, %Y') }}
+                    </div>
+                </div>
+            </article>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Edit Pedal{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Edit Pedal</h1>
+        <a href="{{ url_for('admin_pedals') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left"></i> Back to Pedals
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('admin_edit_pedal', pedal_id=pedal.id) }}" class="needs-validation" novalidate>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="brand" class="form-label">Brand</label>
+                            <input type="text" class="form-control" id="brand" name="brand" value="{{ pedal.brand }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="pedal_model" class="form-label">Model</label>
+                            <input type="text" class="form-control" id="pedal_model" name="pedal_model" value="{{ pedal.pedal_model }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="pedal_type" class="form-label">Type</label>
+                            <input type="text" class="form-control" id="pedal_type" name="pedal_type" value="{{ pedal.pedal_type }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="my_rating" class="form-label">Rating</label>
+                            <input type="number" class="form-control" id="my_rating" name="my_rating" value="{{ pedal.my_rating }}" min="0" max="10" step="0.1" required>
+                            <div class="form-text">Rate from 0 to 10</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="main_features" class="form-label">Main Features</label>
+                            <textarea class="form-control" id="main_features" name="main_features" rows="4">{{ pedal.main_features }}</textarea>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="features" class="form-label">Features</label>
+                            <textarea class="form-control" id="features" name="features" rows="8">{{ pedal.features }}</textarea>
+                            <div class="form-text">
+                                List the pedal's features. Markdown formatting is supported.<br>
+                                Example:<br>
+                                <code>
+                                    **True bypass:** Keeps your signal clean when the pedal's off.<br>
+                                    **LED indicator:** Know when you're in EQ heaven.<br>
+                                    **Connections:** 6.3 mm input/output jacks.
+                                </code>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="our_review" class="form-label">Our Review</label>
+                            <textarea class="form-control" id="our_review" name="our_review" rows="10">{{ pedal.our_review }}</textarea>
+                            <div class="form-text">
+                                Markdown formatting is supported. Use proper Markdown syntax for better formatting.<br>
+                                Example:<br>
+                                <code>
+                                    # Main Title<br>
+                                    ## Subtitle<br>
+                                    **Bold text**<br>
+                                    - List item<br>
+                                    1. Numbered item
+                                </code>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="author" class="form-label">Author</label>
+                            <textarea class="form-control" id="author" name="author" rows="3">{{ pedal.author }}</textarea>
+                            <div class="form-text">
+                                Add author information here. Markdown is supported.<br>
+                                Example:<br>
+                                <code>
+                                    Dave, guitar nerd and lover of Jazzmasters, YouTuber at [Best Guitars Now](https://youtube.com/@bestguitarsnow)
+                                </code>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="meta_description" class="form-label">Meta Description (SEO)</label>
+                            <textarea class="form-control" id="meta_description" name="meta_description" rows="3" maxlength="300">{{ pedal.meta_description }}</textarea>
+                            <div class="form-text">Maximum 300 characters. This description will appear in search engine results.</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="what_makes_it_good" class="form-label">What Makes It Good</label>
+                            <textarea class="form-control" id="what_makes_it_good" name="what_makes_it_good" rows="4">{{ pedal.what_makes_it_good }}</textarea>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="my_experience" class="form-label">My Experience</label>
+                            <textarea class="form-control" id="my_experience" name="my_experience" rows="4">{{ pedal.my_experience }}</textarea>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="about_brand" class="form-label">About Brand</label>
+                            <textarea class="form-control" id="about_brand" name="about_brand" rows="4">{{ pedal.about_brand }}</textarea>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="best_for" class="form-label">Best For</label>
+                            <textarea class="form-control" id="best_for" name="best_for" rows="4">{{ pedal.best_for }}</textarea>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Image URL</label>
+                            <input type="url" class="form-control" id="image" name="image" value="{{ pedal.image }}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="affiliate_link" class="form-label">Affiliate Link</label>
+                            <input type="url" class="form-control" id="affiliate_link" name="affiliate_link" value="{{ pedal.affiliate_link }}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="demo" class="form-label">YouTube Demo URL</label>
+                            <input type="url" class="form-control" id="demo" name="demo" value="{{ pedal.demo }}" 
+                                   placeholder="https://www.youtube.com/watch?v=...">
+                            <div class="form-text">Paste the full YouTube video URL here</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}

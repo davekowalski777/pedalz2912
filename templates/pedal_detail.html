@@ -1,0 +1,728 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ pedal.brand }} {{ pedal.pedal_model }} - User Reviews, Demo, Features{% endblock %}
+
+{% block meta_description %}{{ pedal.meta_description }}{% endblock %}
+
+{% block head %}
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ url_for('pedal_detail', slug=(pedal.brand + ' ' + pedal.pedal_model)|slugify + '-review', _external=True) }}" />
+    
+    <!-- If this is the non-review version, tell crawlers not to index it -->
+    {% if not request.path.endswith('-review') %}
+    <meta name="robots" content="noindex,follow" />
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="background-color: white;">
+    <div class="container-fluid custom-container">
+        <div class="row g-4">
+            <!-- Main Content -->
+            <div class="col-12 col-lg-9">
+                <div class="p-4">
+                    <!-- Breadcrumb -->
+                    <nav aria-label="breadcrumb" class="d-none d-md-block">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('index') }}" class="text-decoration-none">Guitar Pedals</a>
+                            </li>
+                            {% if pedal.pedal_type %}
+                            <li class="breadcrumb-item">
+                                <a href="{{ url_for('pedals', type=pedal.pedal_type) }}" class="text-decoration-none">{{ pedal.pedal_type }}</a>
+                            </li>
+                            {% endif %}
+                            <li class="breadcrumb-item active">{{ pedal.brand }} {{ pedal.pedal_model }}</li>
+                        </ol>
+                    </nav>
+
+                    <!-- Header with Meta -->
+                    <header class="mb-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <h1 class="display-5 fw-bold mb-0">{{ pedal.brand }} {{ pedal.pedal_model }} - User Reviews, Demo, Features</h1>
+                        </div>
+                        <div class="d-flex align-items-center text-muted mb-4 flex-wrap">
+                            {% if pedal.pedal_type %}
+                            <span class="badge bg-primary me-3 mb-2">{{ pedal.pedal_type }}</span>
+                            {% endif %}
+                            <div class="rating me-3 d-flex align-items-center">
+                                <div class="stars d-flex align-items-center">
+                                    {% for i in range(5) %}
+                                        {% if avg_rating and i < avg_rating %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% if avg_rating %}
+                                <span class="ms-2">{{ "%.1f"|format(avg_rating) }} ({{ ratings|length }} reviews)</span>
+                                {% else %}
+                                <span class="ms-2">No reviews yet</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- Main Image -->
+                    {% if pedal.image %}
+                    <div class="text-center mb-4">
+                        <img src="{{ pedal.image }}" alt="{{ pedal.brand }} {{ pedal.pedal_model }}" 
+                             class="img-fluid rounded-4 shadow-sm" 
+                             style="max-height: 400px; object-fit: contain;"
+                             onerror="this.src='https://via.placeholder.com/600x400?text=No+Image'">
+                    </div>
+                    {% endif %}
+
+                    <!-- Buy Button -->
+                    {% if pedal.affiliate_link %}
+                    <div class="text-center mb-5">
+                        <a href="{{ pedal.affiliate_link }}" target="_blank" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-shopping-cart me-2"></i>
+                            See on Thomann
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Demo -->
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+            <i class="fas fa-play text-primary"></i>
+        </div>
+        <h2 class="h3 mb-0 fw-bold">Demo</h2>
+    </div>
+
+    <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+        {% if pedal.demo %}
+            <div class="ratio ratio-16x9 rounded-4 overflow-hidden">
+                <iframe src="{{ pedal.demo|get_youtube_embed_url }}" 
+                        title="YouTube video player" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                </iframe>
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No demo video available for this pedal.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Best For -->
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+            <i class="fas fa-guitar text-primary"></i>
+        </div>
+        <h2 class="h3 mb-0 fw-bold">Best For</h2>
+    </div>
+
+    <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+        {% if pedal.best_for %}
+            <p class="mb-0">{{ pedal.best_for }}</p>
+        {% else %}
+            <p class="text-muted mb-0">No best-for information available for this pedal.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- What Makes It Good -->
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+            <i class="fas fa-thumbs-up text-primary"></i>
+        </div>
+        <h2 class="h3 mb-0 fw-bold">What Makes It Good</h2>
+    </div>
+
+    <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+        {% if pedal.what_makes_it_good %}
+            <p class="mb-0">{{ pedal.what_makes_it_good }}</p>
+        {% else %}
+            <p class="text-muted mb-0">No description available for this pedal.</p>
+        {% endif %}
+    </div>
+</section>
+
+                    <!-- User Reviews -->
+                    <section class="mb-5 review-container">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                <i class="fas fa-comments text-primary"></i>
+                            </div>
+                            <h2 class="h3 mb-0 fw-bold">User Reviews</h2>
+                        </div>
+
+                        {% if ratings %}
+                            <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+                                <div class="text-center mb-4 pb-4 border-bottom">
+                                    <div class="display-4 fw-bold text-primary mb-2">{{ "%.1f"|format(avg_rating) }}</div>
+                                    <div class="d-flex justify-content-center mb-2">
+                                        {% for i in range(5) %}
+                                            {% if i < avg_rating|int %}
+                                                <svg class="text-warning mx-1" width="32" height="32" viewBox="0 0 24 24" fill="currentColor" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));">
+                                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                                </svg>
+                                            {% else %}
+                                                <svg class="text-warning mx-1" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));">
+                                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                                </svg>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <p class="text-muted mb-0">
+                                        The {{ pedal.brand }} {{ pedal.pedal_model }} has {{ "%.1f"|format(avg_rating) }} stars based on {{ ratings|length }} review{% if ratings|length != 1 %}s{% endif %}
+                                    </p>
+                                </div>
+                                {% for rating in ratings %}
+                                    {% if rating.approved %}
+                                        <div class="review-card mb-4 {% if not loop.last %}border-bottom pb-4{% endif %}">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <div>
+                                                    <h5 class="fw-bold mb-1">{{ rating.author_name }}</h5>
+                                                    <div class="rating-display mb-2">
+                                                        {% for i in range(rating.rating) %}
+                                                            <i class="fas fa-star text-warning"></i>
+                                                        {% endfor %}
+                                                        {% for i in range(5 - rating.rating) %}
+                                                            <i class="far fa-star text-warning"></i>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">{{ rating.created_at.strftime('%B %d, %Y') }}</small>
+                                            </div>
+                                            <p class="mb-0">{{ rating.comment }}</p>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="p-4 rounded-4 shadow-sm text-center" style="background-color: #f8f9fa;">
+                                <p class="text-muted mb-0">No reviews yet. Be the first to review this pedal!</p>
+                            </div>
+                        {% endif %}
+                    </section>
+
+                    <!-- Review Form -->
+                    <section class="mb-5">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                <i class="fas fa-star text-primary"></i>
+                            </div>
+                            <h2 class="h3 mb-0 fw-bold">Write a Review</h2>
+                        </div>
+
+                        <form action="{{ url_for('add_rating', pedal_id=pedal.id) }}" method="POST" class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+                            <div class="text-center mb-4">
+                                <p class="text-muted">
+                                    Do you own the {{ pedal.brand }} {{ pedal.pedal_model }}? Share your experience and help other guitarists make informed decisions!
+                                    Your review will help the community discover great guitar pedals.
+                                </p>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="name" class="form-label fw-bold">Your Name</label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Rating</label>
+                                <div class="rating-input">
+                                    {% for i in range(1, 6) %}
+                                    <label class="rating-label">
+                                        <input type="radio" name="rating" value="{{ i }}" class="d-none" required>
+                                        <i class="far fa-star text-warning fa-2x"></i>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label for="comment" class="form-label fw-bold">Your Review</label>
+                                <textarea class="form-control" id="comment" name="comment" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Submit Review</button>
+                        </form>
+                    </section>
+                    <!-- Our Review -->
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+            <i class="fas fa-pen text-primary"></i>
+        </div>
+        <h2 class="h3 mb-0 fw-bold">Our Review</h2>
+    </div>
+
+    <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+        {% if pedal.our_review %}
+            {{ pedal.our_review|markdown_to_html|safe }}
+            {% if pedal.author %}
+                <div class="mt-4 pt-4 border-top">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <img src="{{ url_for('static', filename='images/dawid.jpg') }}" 
+                                 alt="Author" 
+                                 class="rounded-circle"
+                                 style="width: 48px; height: 48px; object-fit: cover;">
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="text-muted mb-1">Author:</div>
+                            <div class="author-text">{{ pedal.author|markdown_to_html|safe }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4"></div>
+            {% endif %}
+        {% else %}
+            <p class="text-muted mb-0">No review available for this pedal.</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Our Rating -->
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+            <i class="fas fa-star text-primary"></i>
+        </div>
+        <h2 class="h3 mb-0 fw-bold">Our Rating</h2>
+    </div>
+
+    <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+        {% if pedal.my_rating %}
+            <div class="text-center">
+                <div class="display-4 fw-bold text-primary mb-3">{{ "%.1f"|format(pedal.my_rating) }}/10</div>
+                <div class="position-relative mx-auto" style="max-width: 300px;">
+                    <svg width="100%" height="40" class="mb-2">
+                        <!-- Background bar -->
+                        <rect width="100%" height="20" rx="10" fill="#e9ecef"/>
+                        <!-- Rating bar -->
+                        <rect width="{{ (pedal.my_rating / 10) * 100 }}%" height="20" rx="10" 
+                            {% if pedal.my_rating >= 8 %}
+                                fill="#28a745"  {# Green for 8-10 #}
+                            {% elif pedal.my_rating >= 5 %}
+                                fill="#ffc107"  {# Yellow for 5-7.9 #}
+                            {% else %}
+                                fill="#dc3545"  {# Red for 0-4.9 #}
+                            {% endif %}
+                        >
+                            <animate attributeName="width" from="0" to="{{ (pedal.my_rating / 10) * 100 }}%" dur="1s" fill="freeze"/>
+                        </rect>
+                    </svg>
+                    <div class="text-muted small mt-1 text-center">
+                        {% if pedal.my_rating >= 8 %}
+                            <span class="text-success">Excellent</span>
+                        {% elif pedal.my_rating >= 5 %}
+                            <span class="text-warning">Good</span>
+                        {% else %}
+                            <span class="text-danger">Below Average</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p class="text-muted text-center mb-0">No rating available</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Features -->
+<section class="mb-5">
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+            <i class="fas fa-list text-primary"></i>
+        </div>
+        <h2 class="h3 mb-0 fw-bold">Features</h2>
+    </div>
+
+    <div class="p-4 rounded-4 shadow-sm" style="background-color: #f8f9fa;">
+        {% if pedal.features %}
+            <div class="features-list">
+                {% for feature in pedal.features|split_features %}
+                    <div class="d-flex align-items-start mb-2">
+                        <i class="fas fa-check text-success me-3 mt-1"></i>
+                        <span>{{ feature|markdown_to_html|safe }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No features listed.</p>
+        {% endif %}
+    </div>
+</section>
+
+                    <!-- Similar Pedals -->
+                    <section class="mb-5">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                <i class="fas fa-guitar text-primary"></i>
+                            </div>
+                            <h2 class="h3 mb-0 fw-bold">Similar Pedals</h2>
+                        </div>
+                        
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
+                            {% for similar_pedal in similar_pedals %}
+                            <div class="col">
+                                <div class="card h-100 shadow-sm rounded-4 border-0">
+                                    {% if similar_pedal.image %}
+                                    <img src="{{ similar_pedal.image }}" 
+                                         class="card-img-top p-3" 
+                                         alt="{{ similar_pedal.brand }} {{ similar_pedal.pedal_model }}"
+                                         style="height: 200px; object-fit: contain;"
+                                         onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-2">{{ similar_pedal.brand }} {{ similar_pedal.pedal_model }}</h5>
+                                        {% if similar_pedal.pedal_type %}
+                                        <span class="badge bg-primary mb-2">{{ similar_pedal.pedal_type }}</span>
+                                        {% endif %}
+                                        <p class="card-text small text-muted">
+                                            {{ (similar_pedal.description or '')|truncate(100) }}
+                                        </p>
+                                        <div class="d-grid gap-2">
+                                            <a href="{{ url_for('pedal_detail', slug=(similar_pedal.brand + ' ' + similar_pedal.pedal_model)|slugify + '-review') }}" 
+                                               class="btn btn-primary">
+                                                View Details
+                                            </a>
+                                            <a href="{{ url_for('compare_pedals_by_slug', pedal1=(pedal.brand + ' ' + pedal.pedal_model)|slugify, pedal2=(similar_pedal.brand + ' ' + similar_pedal.pedal_model)|slugify) }}"
+                                               class="btn btn-danger">
+                                                Compare
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+         
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-12 col-lg-3">
+                <div class="position-sticky" style="top: 2rem;">
+                    <!-- About GuitarPedalDB -->
+                    <div class="card border-0 bg-light">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-3">
+                                    <i class="fas fa-database text-primary"></i>
+                                </div>
+                                <h5 class="card-title mb-0">About GuitarPedalDB</h5>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <p class="card-text text-muted">Your trusted source for comprehensive guitar pedal information, real user experiences, and expert insights.</p>
+                            </div>
+                            
+                            <div class="bg-white rounded-3 p-3">
+                                <h6 class="fw-bold mb-3">What we offer:</h6>
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-check-circle text-primary me-2"></i>
+                                        <span>Detailed pedal specifications</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-check-circle text-primary me-2"></i>
+                                        <span>Authentic user reviews</span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-check-circle text-primary me-2"></i>
+                                        <span>Expert recommendations</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-top px-2">
+                                <p class="text-muted small mb-0">Disclaimer: We may earn from qualifying purchases through affiliate links.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .custom-container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+        .custom-container {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+
+        .col-12 .p-4 {
+            padding: 1rem !important;
+        }
+    }
+
+    @media (min-width: 768px) {
+        .custom-container {
+            padding-left: 4rem;
+            padding-right: 4rem;
+        }
+    }
+
+    @media (min-width: 992px) {
+        .custom-container {
+            padding-left: 6rem;
+            padding-right: 6rem;
+        }
+    }
+
+    .rating-input {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.5rem;
+        justify-content: flex-start;
+        width: fit-content;
+    }
+
+    .rating-label {
+        cursor: pointer;
+        padding: 0.25rem;
+    }
+
+    .rating-label .fa-star {
+        transition: color 0.2s;
+    }
+
+    @media (max-width: 768px) {
+        .rating-input {
+            justify-content: center;
+        }
+        .rating-label {
+            padding: 0.15rem;
+        }
+        .rating-label .fa-2x {
+            font-size: 1.5em;
+        }
+    }
+
+    /* Base star style */
+    .rating-label i {
+        color: #ffc107;
+    }
+
+    /* Fill stars on click */
+    .rating-input input:checked + i,
+    .rating-input input:checked ~ label i {
+        content: "\f005";
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+    }
+
+    .position-sticky {
+        position: sticky !important;
+        top: 2rem;
+        z-index: 1020;
+    }
+
+    /* Review Container Styles */
+    .review-container {
+        font-family: 'Inter', sans-serif;
+    }
+
+    .review-container h3 {
+        color: #2c3e50;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+    }
+
+    .review-container h4 {
+        color: #34495e;
+        margin: 1.5rem 0 1rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+
+    .review-container p {
+        color: #4a5568;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .review-container ul {
+        list-style-type: none;
+        padding-left: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    .review-container ul li {
+        position: relative;
+        padding-left: 1.5rem;
+        margin-bottom: 0.5rem;
+        color: #4a5568;
+    }
+
+    .review-container ul li:before {
+        content: "•";
+        color: #3182ce;
+        font-weight: bold;
+        position: absolute;
+        left: 0;
+    }
+
+    .review-container .pros-and-cons {
+        background-color: #ffffff;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .review-container .conclusion {
+        border-top: 2px solid #e2e8f0;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+    }
+
+    /* Markdown content styles */
+    .review-container strong,
+    .features-list strong {
+        color: #2d3748;
+        font-weight: 600;
+    }
+
+    .review-container p,
+    .features-list p {
+        margin: 0;
+        line-height: 1.6;
+        color: #4a5568;
+    }
+
+    .review-container h1 {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+    }
+
+    .review-container h2 {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 1.5rem 0 1rem;
+    }
+
+    .review-container h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 1.25rem 0 0.75rem;
+    }
+
+    .review-container ul,
+    .review-container ol {
+        padding-left: 1.5rem;
+        margin: 1rem 0;
+    }
+
+    .review-container li {
+        margin-bottom: 0.5rem;
+        color: #4a5568;
+    }
+
+    .review-container > *:first-child {
+        margin-top: 0;
+    }
+
+    .review-container > *:last-child {
+        margin-bottom: 0;
+    }
+
+    .features-list strong {
+        color: #2d3748;
+        font-weight: 600;
+    }
+
+    .features-list p {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .features-list span > p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Star rating styles */
+    .rating-display {
+        font-size: 1.25rem;
+        color: #fbbf24;
+    }
+
+    .rating-display .fas.fa-star,
+    .rating-display .far.fa-star {
+        margin-right: 0.25rem;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+    }
+
+    .rating-display .far.fa-star {
+        opacity: 0.5;
+    }
+
+    .author-text > p {
+        margin-bottom: 0 !important;
+    }
+
+    .review-card .rating-display {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.25rem;
+        line-height: 1;
+    }
+
+    @media (max-width: 768px) {
+        .review-card .d-flex.justify-content-between {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .review-card .text-muted {
+            font-size: 0.875rem;
+            order: 1;
+        }
+
+        .review-card .rating-display {
+            font-size: 1rem;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ratingContainer = document.querySelector('.rating-input');
+        const ratingLabels = ratingContainer.querySelectorAll('.rating-label');
+
+        function updateStars(targetRating) {
+            ratingLabels.forEach(l => {
+                const value = parseInt(l.querySelector('input').value);
+                const s = l.querySelector('i');
+                if (value <= targetRating) {
+                    s.classList.remove('far');
+                    s.classList.add('fas');
+                } else {
+                    s.classList.remove('fas');
+                    s.classList.add('far');
+                }
+            });
+        }
+
+        // Handle clicks only
+        ratingLabels.forEach(label => {
+            label.addEventListener('click', function() {
+                const rating = parseInt(this.querySelector('input').value);
+                updateStars(rating);
+            });
+        });
+    });
+</script>
+{% endblock %}

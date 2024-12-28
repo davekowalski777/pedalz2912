@@ -1,0 +1,110 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Manage Reviews{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Manage Reviews</h1>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Pedal</th>
+                            <th>Author</th>
+                            <th>Rating</th>
+                            <th>Comment</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for review in ratings.items %}
+                        <tr>
+                            <td>{{ review.created_at.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <a href="{{ url_for('pedal_detail', slug=(review.pedal.brand + ' ' + review.pedal.pedal_model)|slugify + '-review') }}" target="_blank">
+                                    {{ review.pedal.brand }} {{ review.pedal.pedal_model }}
+                                </a>
+                            </td>
+                            <td>{{ review.author_name }}</td>
+                            <td>
+                                <div class="stars">
+                                    {% for i in range(5) %}
+                                        {% if i < review.rating|int %}
+                                            <i class="fas fa-star text-warning"></i>
+                                        {% else %}
+                                            <i class="far fa-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td>
+                                <div style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    {{ review.comment }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if review.approved %}
+                                <span class="badge bg-success">Approved</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not review.approved %}
+                                <form action="{{ url_for('admin_approve_rating', rating_id=review.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <form action="{{ url_for('admin_delete_rating', rating_id=review.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this review?');">
+                                    <button type="submit" class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if ratings.pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if ratings.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin_reviews', page=ratings.prev_num) }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in ratings.iter_pages(left_edge=2, left_current=2, right_current=2, right_edge=2) %}
+                        {% if page_num %}
+                            <li class="page-item {% if page_num == ratings.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin_reviews', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if ratings.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin_reviews', page=ratings.next_num) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

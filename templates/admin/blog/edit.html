@@ -1,0 +1,111 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{% if post %}Edit{% else %}New{% endif %} Blog Post{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">{% if post %}Edit{% else %}New{% endif %} Blog Post</h1>
+        <a href="{{ url_for('admin_blog') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Back to Posts
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" class="needs-validation" novalidate>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ post.title if post else '' }}" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="slug" class="form-label">Slug</label>
+                            <input type="text" class="form-control" id="slug" name="slug" 
+                                   value="{{ post.slug if post else '' }}" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="content" class="form-label">Content</label>
+                    <textarea class="form-control" id="content" name="content" rows="10" required>{{ post.content if post else '' }}</textarea>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="meta_title" class="form-label">Meta Title</label>
+                            <input type="text" class="form-control" id="meta_title" name="meta_title" 
+                                   value="{{ post.meta_title if post else '' }}">
+                            <div class="form-text">Optional SEO title. If not set, the post title will be used.</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="meta_description" class="form-label">Meta Description</label>
+                            <input type="text" class="form-control" id="meta_description" name="meta_description" 
+                                   value="{{ post.meta_description if post else '' }}">
+                            <div class="form-text">Optional SEO description.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="featured_image" class="form-label">Featured Image URL</label>
+                    <input type="url" class="form-control" id="featured_image" name="featured_image" 
+                           value="{{ post.featured_image if post else '' }}">
+                </div>
+
+                <div class="mb-4">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="published" name="published" 
+                               {% if post and post.published %}checked{% endif %}>
+                        <label class="form-check-label" for="published">Published</label>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2">
+                    <a href="{{ url_for('admin_blog') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">
+                        {% if post %}Save Changes{% else %}Create Post{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+
+// Auto-generate slug from title
+document.getElementById('title').addEventListener('input', function() {
+    const title = this.value;
+    const slug = title.toLowerCase()
+        .replace(/[^\w\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-')     // Replace spaces with hyphens
+        .replace(/-+/g, '-');     // Replace multiple hyphens with single hyphen
+    document.getElementById('slug').value = slug;
+});
+</script>
+{% endblock %}

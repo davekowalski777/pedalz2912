@@ -1,0 +1,202 @@
+{% extends "layout.html" %}
+
+{% block title %}Guitar Pedal Database - Search & Filter Effects Pedals{% endblock %}
+
+{% block meta_description %}Browse our comprehensive database of guitar effects pedals. Filter by brand, type, price, and rating to find your perfect pedal.{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Filters Section -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form id="filterForm" method="get" action="{{ url_for('pedals') }}">
+                        <!-- Search -->
+                        <div class="mb-3">
+                            <label for="search" class="form-label">Search</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="search" name="search" 
+                                       value="{{ current_search or '' }}" 
+                                       placeholder="Search by brand or model...">
+                                <button class="btn btn-outline-primary" type="submit">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Brand Filter -->
+                        <div class="mb-3">
+                            <label for="brand" class="form-label">Brand</label>
+                            <select class="form-select" id="brand" name="brand">
+                                <option value="">All Brands</option>
+                                {% for brand_option in brands %}
+                                <option value="{{ brand_option }}" {% if current_brand == brand_option %}selected{% endif %}>
+                                    {{ brand_option }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Type Filter -->
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Type</label>
+                            <select class="form-select" id="type" name="type">
+                                <option value="">All Types</option>
+                                {% for type_option in types %}
+                                <option value="{{ type_option }}" {% if current_type == type_option %}selected{% endif %}>
+                                    {{ type_option }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Rating Filter -->
+                        <div class="mb-3">
+                            <label for="min_rating" class="form-label">Minimum Rating</label>
+                            <select class="form-select" id="min_rating" name="min_rating">
+                                <option value="">Any Rating</option>
+                                <option value="4.5" {% if current_min_rating == 4.5 %}selected{% endif %}>4.5+ Stars</option>
+                                <option value="4" {% if current_min_rating == 4.0 %}selected{% endif %}>4+ Stars</option>
+                                <option value="3.5" {% if current_min_rating == 3.5 %}selected{% endif %}>3.5+ Stars</option>
+                                <option value="3" {% if current_min_rating == 3.0 %}selected{% endif %}>3+ Stars</option>
+                            </select>
+                        </div>
+
+                        <!-- Sort -->
+                        <div class="mb-3">
+                            <label for="sort" class="form-label">Sort By</label>
+                            <select class="form-select" id="sort" name="sort">
+                                <option value="newest" {% if current_sort == 'newest' %}selected{% endif %}>Newest</option>
+                                <option value="rating" {% if current_sort == 'rating' %}selected{% endif %}>Highest Rated</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                        <a href="{{ url_for('pedals') }}" class="btn btn-outline-secondary w-100 mt-2">Clear Filters</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Guitar Pedal Database</h1>
+                <small class="text-muted">{{ pagination.total }} pedals found</small>
+            </div>
+
+            {% if pedals %}
+            <style>
+                .pedal-card {
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .pedal-card .card-img-top, 
+                .pedal-card .card-img-placeholder {
+                    height: 200px;
+                    object-fit: contain;
+                    padding: 1rem;
+                }
+
+                .pedal-card .card-body {
+                    display: flex;
+                    flex-direction: column;
+                    height: 160px;
+                }
+
+                .pedal-card .card-title {
+                    margin-bottom: 0.5rem;
+                }
+
+                .pedal-card .button-wrapper {
+                    margin-top: auto;
+                    padding-top: 1rem;
+                }
+            </style>
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for pedal in pedals %}
+                <div class="col">
+                    <div class="card shadow-sm hover-shadow pedal-card">
+                        {% set normalized_model = pedal.pedal_model.replace('/', '') %}
+                        {% if ' - ' in normalized_model %}
+                            {% set normalized_model = normalized_model.replace(' - ', '-') %}
+                        {% endif %}
+                        {% set pedal_url = url_for('pedal_detail', slug=(pedal.brand + ' ' + normalized_model)|slugify + '-review') %}
+                        <a href="{{ pedal_url }}" class="text-decoration-none">
+                            {% if pedal.image %}
+                            <img src="{{ pedal.image }}" class="card-img-top" alt="{{ pedal.brand }} {{ pedal.pedal_model }}">
+                            {% else %}
+                            <div class="card-img-placeholder d-flex align-items-center justify-content-center bg-light">
+                                <i class="fas fa-guitar fa-3x text-muted"></i>
+                            </div>
+                            {% endif %}
+                        </a>
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{{ pedal_url }}" class="text-decoration-none text-dark">
+                                    {{ pedal.brand }} {{ pedal.pedal_model }}
+                                </a>
+                            </h5>
+                            <p class="text-muted small mb-0">{{ pedal.pedal_type }}</p>
+                            
+                            <div class="button-wrapper text-center">
+                                <a href="{{ pedal_url }}" class="btn btn-primary px-4 py-2">
+                                    View More
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if pagination.pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% for page in pagination.iter_pages() %}
+                        {% if page %}
+                            <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('pedals', page=page, brand=current_brand, type=current_type, min_price=current_min_price, max_price=current_max_price, min_rating=current_min_rating, sort=current_sort) }}">{{ page }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="alert alert-info">
+                No pedals found matching your criteria. Try adjusting your filters.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add hover effect to cards
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.hover-shadow');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-5px)';
+                card.style.transition = 'transform 0.2s ease-in-out';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+{% endblock %}
