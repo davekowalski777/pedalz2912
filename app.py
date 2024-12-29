@@ -310,7 +310,12 @@ def get_similar_pedals(pedal, limit=4):
 @cache.cached(timeout=3600)
 @app.route('/pedal/<slug>')
 def pedal_detail(slug):
-    # Remove any trailing '-review' from the slug for matching
+    # Check if the URL ends with '-review'
+    if not slug.endswith('-review'):
+        # Redirect to the -review version
+        return redirect(url_for('pedal_detail', slug=slug + '-review'), code=301)
+    
+    # Remove the '-review' suffix for matching
     base_slug = slug.replace('-review', '')
     
     # Get all pedals and find the matching one
@@ -329,11 +334,15 @@ def pedal_detail(slug):
             # Get similar pedals
             similar_pedals = get_similar_pedals(pedal)
             
-            return render_template('pedal_detail.html', 
+            response = make_response(render_template('pedal_detail.html', 
                                 pedal=pedal,
                                 ratings=ratings,
                                 avg_rating=avg_rating,
-                                similar_pedals=similar_pedals)
+                                similar_pedals=similar_pedals))
+            
+            # Add cache headers
+            response.headers['Cache-Control'] = 'public, max-age=3600, stale-while-revalidate=60'
+            return response
     
     abort(404)
 
